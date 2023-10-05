@@ -14,6 +14,9 @@ if(isset($_POST["option"])) {
         case 'inventario':
             inventario_de_ordenes();
             break;
+        case 'borrar_orden':
+            borrar_orden();
+            break;
         }
     }
 
@@ -26,8 +29,10 @@ function orders_list() {
     $pnl_color = "";
     $direct_color = "";
     $index = 1;
+    $total_volumen = 0;
+    $total_margen = 0;
     $total_pnl = 0;
-    $sql = "SELECT moneda, exchange, direccion_, SUM(volumen_entrada) AS suma_volumen, SUM(margen_) AS suma_margen, SUM(volumen_entrada) / SUM(contratos_) AS entrada_promedio FROM ordenes GROUP BY moneda, exchange";
+    $sql = "SELECT moneda, exchange, direccion_, SUM(volumen_entrada) AS suma_volumen, SUM(margen_) AS suma_margen, SUM(volumen_entrada) / SUM(contratos_) AS entrada_promedio FROM ordenes WHERE status_ = 1 GROUP BY moneda, exchange, direccion_";
 
     if($result = $conn->query($sql)){
         while($row = $result->fetch_array()){
@@ -37,20 +42,24 @@ function orders_list() {
             $suma_volumen = $row["suma_volumen"];
             $suma_margen = $row["suma_margen"];
             $entrada_promedio = $row["entrada_promedio"];
+            $proyeccion_1 = $direccion == 'Long' ?  ($entrada_promedio + ($entrada_promedio * 0.01)) : ($entrada_promedio - ($entrada_promedio * 0.01));
+            $proyeccion_2 = $direccion == 'Long' ?  ($entrada_promedio + ($entrada_promedio * 0.02)) : ($entrada_promedio - ($entrada_promedio * 0.02));
             $precio_actual = get_binance_price($moneda);
             $porcentaje_movimiento_actual = (($precio_actual / $entrada_promedio) *100) -100;
             $pnl_actual = ($suma_volumen * $porcentaje_movimiento_actual) / 100;
             $direct_color = ($direccion == 'Long' ? "style='color:green;'" : "style='color:red;'");
 
-                if($direccion == 'Short') {
-                    $pnl_actual = $pnl_actual * (-1);
-                    $pnl_color = $pnl_actual < 0 ? "style='color:red;'" : "style='color:green;'";
-                } else if ($direccion == 'Long') {
-                    $pnl_color = $pnl_actual < 0 ? "style='color:red;'" : "style='color:green;'";
-                } else {
-                    $pnl_color = "style='color:blue;'"; 
-                }
+            if($direccion == 'Short') {
+                $pnl_actual = $pnl_actual * (-1);
+                $pnl_color = $pnl_actual < 0 ? "style='color:red;'" : "style='color:green;'";
+            } else if ($direccion == 'Long') {
+                $pnl_color = $pnl_actual < 0 ? "style='color:red;'" : "style='color:green;'";
+            } else {
+                $pnl_color = "style='color:blue;'"; 
+            }
 
+            $total_volumen += $suma_volumen;
+            $total_margen += $suma_margen;
             $total_pnl += $pnl_actual;
 
             $table .= "<tr>";
@@ -58,13 +67,14 @@ function orders_list() {
             $table .= "<td align='center'>".$moneda."</td>";
             $table .= "<td align='center'>".$exchange."</td>";
             $table .= "<td align='center'".$direct_color.">".$direccion."</td>";
-            $table .= "<td align='center'>".round($suma_volumen, 4)."</td>";
+            $table .= "<td align='center'><strong>".round($suma_volumen, 4)."</strong></td>";
             $table .= "<td align='center'>".round($suma_margen, 4)."</td>";
             $table .= "<td align='center'>".round($entrada_promedio, 4)."</td>";
-            $table .= "<td align='center'>".round($precio_actual, 4)."</td>";
+            $table .= "<td align='center'>".round($proyeccion_1, 4)."</td>";
+            $table .= "<td align='center'>".round($proyeccion_2, 4)."</td>";
+            $table .= "<td align='center'>".round($precio_actual, 5)."</td>";
             $table .= "<td align='center'>" .round($porcentaje_movimiento_actual, 3)."%</td>";
             $table .= "<td align='center' ".$pnl_color.">".round($pnl_actual, 4)."</td>";
-            $table .= "<td align='center' ".$pnl_color.">".round($total_pnl, 4)."</td>";
             $table .= "</tr>";
 
             $index += 1;
@@ -73,7 +83,10 @@ function orders_list() {
     }
 
     $jsondata['orders_table'] = $table;
-    $jsondata['pnl_acumulado'] = $total_pnl;
+    $jsondata['pnl_acumulado'] = round($total_pnl, 3);
+    $jsondata['volumen_acumulado'] = round($total_volumen, 3);
+    $jsondata['margen_acumulado'] = round($total_margen, 3);
+
     echo json_encode($jsondata);
 }
 
@@ -87,6 +100,7 @@ function inventario_de_ordenes() {
     $table = "";
     $index = 1;
     $direct_color = "";
+    $estado = "";
     $sql = "SELECT * FROM ordenes ORDER BY exchange";
 
     if($result = $conn->query($sql)){
@@ -100,6 +114,7 @@ function inventario_de_ordenes() {
             $volumen_entrada = $row["volumen_entrada"];
             $contratos = $row['contratos_'];
             $margen = $row['margen_'];
+            $status = $row['status_'];
             $creacion = $row['creada_'];
 
                 if($direccion == 'Short') {
@@ -107,7 +122,13 @@ function inventario_de_ordenes() {
                 } else if ($direccion == 'Long') {
                     $direct_color = "style='color:green;'";
                 } else {
-                    $pnl_color = "style='color:blue;'"; 
+                    $pnl_color = "style='color:blue;'";
+                }
+
+                if($status == 1) {
+                    $estado = "Activa";
+                } else if ($status == 0) {
+                    $estado = "Cerrada";
                 }
 
             $table .= "<tr>";
@@ -119,8 +140,10 @@ function inventario_de_ordenes() {
             $table .= "<td align='center'>".round($precio_entrada, 4)."</td>";
             $table .= "<td align='center'>".round($volumen_entrada, 4)."</td>";
             $table .= "<td align='center'>".round($contratos, 4)."</td>";
-            $table .= "<td align='center'>" .round($margen, 3)."%</td>";
+            $table .= "<td align='center'>" .round($margen, 3)."</td>";
             $table .= "<td align='center'>".$creacion."</td>";
+            $table .= "<td align='center'>".$estado."</td>";
+            $table .= "<td align='center'><button data-id=".$id_." class='btn btn-sm btn-warning borrar'>Borrar</td>";
             $table .= "</tr>";
 
             $index += 1;
@@ -177,6 +200,23 @@ function insert_order() {
 }
 
 
+// *********************** ACTUALIZAR STATUS DE ORDENES ***********************//
+function borrar_orden() {
+    // Obtiene los datos del formulario
+    global $conn;
+    $data = '';
+    $formData = $_POST["formulario"];
+    $id = $formData['id'];
+    
+    try {
+        $sql = "UPDATE ordenes SET status_ = 0 WHERE ordenes.ID_orden = ".$id;
+        $conn->query($sql);
+        $conn->close();
+        // header("Location: ./index.php");
+    } catch (Exception $e) {
+        echo "An error occurred: " . $e->getMessage();
+    }
 
+}
 
 ?>
