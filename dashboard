@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" src="css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <meta http-equiv="refresh" content="300">
+
+    <style>
+        body {
+            color: white;
+            background-color: #3e4444;
+        }
+        /* Estilos generales para el tbody */
+        tbody, thead {
+            font-size: 20px;  /* Cambia el tamaño de la letra */
+            color: #ffffff;   /* Cambia el color de la letra */
+            background-color: #333333;  /* Fondo gris oscuro para el tbody */
+            line-height: 1.8;  /* Aumenta el espaciado entre líneas */
+            text-align: center;  /* Centra el texto */
+        }
+
+        table {
+            box-shadow: 0px 0px 12px 2px rgb(255, 252, 68);
+        }
+
+    </style>
+
+</head>
+<body>
+
+    <div class="container mt-4">
+        <table class="table table-dark table-lg table-hover">
+            <thead>
+                <tr align="center">
+                    <th>PnL</th>
+                    <th>Volumen</th>
+                    <th>Margen</th>
+		            <th>% Margen</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr align="center">
+                    <td id="pnl_total" style="font-size: 30px"></td>
+                    <td id="vol_total" style="font-size: 30px"></td>
+                    <td id="margen_total" style="font-size: 30px"></td>
+		            <td id="percMargen_total" style="font-size: 30px">
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="container-fluid mt-4">
+        <table class="table table-sm table-dark table-hover">
+            <thead>
+                <tr align="center">
+                    <th>#</th>
+                    <th>Moneda</th>
+                    <th>PnL</th>
+                    <th>P. Actual</th>
+                    <th>Entrada</th>
+                    <th>Distancia</th>
+                    <th>Exchange</th>
+                    <th>X</th>
+                    <th>Volumen</th>
+                    <th>Margen</th>
+                    <th>10%</th>
+                    <th>20%</th>
+                </tr>
+            </thead>
+            <tbody id="orders_table"></tbody>
+        </table>
+    </div>
+
+
+</body>
+<script src="js/actions_dashboard.js"></script>
+</html>

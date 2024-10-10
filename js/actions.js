@@ -1,72 +1,62 @@
 $(document).ready(function() {
-    // Obtener órdenes al cargar la página
-    getOrders();
-    getFullInventory();
-    
-    // Guardar una nueva orden
-    $("#guardar").click(async function(e) {
-        e.preventDefault();
-        const formData = {
-            moneda: $('#moneda').val(),
-            exchange: $('#exchange').val(),
-            direccion: $('#direccion').val(),
-            apalancamiento: $('#apalancamiento').val(),
-            precioEntrada: $('#precioEntrada').val(),
-            volumen: $('#volumen').val()
-        };
 
-        try {
-            await saveOrder(formData);
-            console.log("Orden guardada");
-            // Limpiar el formulario después de guardar
-            $('#order_form')[0].reset();
-            // Obtener y mostrar las órdenes actualizadas
-            getOrders();
-            getFullInventory();
-        } catch (error) {
-            console.log("Error al guardar la orden:", error);
+    getProjections();
+    // Establece una actualización periódica cada minuto
+    setInterval(function() {
+        getProjections();
+    }, 120000); // 60000 milisegundos = 1 minuto
+
+
+    // Obtener elementos del DOM y Valores - Input!!!
+    const apalancamiento = $("#apalancamiento");
+    const direccionSelect = $("#direccion");
+    const precioEntradaInput = $("#precioEntrada");
+    const stopLoss = $("#stopLoss");
+    const capital = $("#maxLoss");
+    const volumen  = $("#volumen");
+    const volumen_ = $("#volumen_");
+    const margen_ = $("#margen_");
+    const volumenInput = $("#nivel");
+
+    // Campos en Tabla de Proyeccion Proporcional !!!
+    const slTable = $("#stopLossProyectado");
+    const unoAuno  = $("#unoAuno");
+    const dosAuno  = $("#dosAuno");
+
+
+    // P R O Y E C C I O N  P R O P O R C I O N A L
+    function calcularProyeccionProporcional() {
+        console.log("Proporcional / 1:1 - 2:1");
+        const direccion = direccionSelect.val();
+        const precioEntrada = parseFloat(precioEntradaInput.val());
+        const volumen_calc = parseFloat(capital.val() * apalancamiento.val()) / (parseFloat((stopLoss.val()/100)) * apalancamiento.val());
+        const margen_calc = parseFloat(volumen_calc) / apalancamiento.val();
+        
+        if(direccion === "Long"){
+            var uno = parseFloat(precioEntrada + (precioEntrada * parseFloat((stopLoss.val()/100))));
+            var dos = parseFloat(precioEntrada + (precioEntrada * parseFloat((stopLoss.val()/100))) * 2);
+            var precioSL = (precioEntradaInput.val() - (precioEntrada * stopLoss.val() / 100));
+        } else {
+            var uno = parseFloat(precioEntrada - (precioEntrada * parseFloat((stopLoss.val()/100))));
+            var dos = parseFloat(precioEntrada - (precioEntrada * parseFloat((stopLoss.val()/100))) * 2);
+            var precioSL = (parseFloat(precioEntradaInput.val()) + parseFloat((precioEntrada * stopLoss.val()) / 100));
         }
-    });
 
-    $(document).on('click', '.borrar', function() {
-        const formData = {
-            id: $(this).data('id')
-        };
-        makeAjaxRequest('borrar_orden', formData);
-        getOrders();
-        getFullInventory();
-    });
-    
+        slTable.html(precioSL.toFixed(5));
+        volumen_.html(volumen_calc.toFixed(3));
+        volumen.val(volumen_calc.toFixed(3));
+        margen_.html(margen_calc.toFixed(3));
+        unoAuno.html(uno.toFixed(5));
+        dosAuno.html(dos.toFixed(5));
 
+    }
+
+    // Guardar Orden
     async function saveOrder(formData) {
         return makeAjaxRequest('insert_order', formData);
     }
-
-    async function getOrders() {
-        try {
-            const response = await makeAjaxRequest('orders_list');
-            $('#ordenes_table').html(response.orders_table);
-            $('#vol').html(response.volumen_acumulado);
-            $('#margen').html(response.margen_acumulado);
-            $('#pnl').html(response.pnl_acumulado);
-        } catch (error) {
-            console.log("Error al obtener las órdenes:", error);
-            // Muestra un mensaje de error en un div con ID 'error_message'
-            $('#ordenes_table').html("Error al cargar los datos.");
-        }
-    }
-
-    async function getFullInventory() {
-        try {
-            const response = await makeAjaxRequest('inventario');
-            $('#inventario_ordenes').html(response.inventory_table);
-        } catch (error) {
-            console.log("Error al obtener las órdenes:", error);
-            // Muestra un mensaje de error en un div con ID 'error_message'
-            $('#inventario_ordenes').html("Error al cargar los datos.");
-        }
-    }
-
+    
+    // Funcion Ajax que interactua con la base de datos
     async function makeAjaxRequest(option, data = {}) {
         return new Promise((resolve, reject) => {
             $.ajax({
@@ -84,54 +74,43 @@ $(document).ready(function() {
         });
     }
 
-
-    $(document).ready(function() {
-        // Obtener elementos del DOM
-        const direccionSelect = $("#direccion");
-        const precioEntradaInput = $("#precioEntrada");
-        const volumenInput = $("#volumen");
-        const proyeccionArribaPercent = $("#projecctionArribaPercent");
-        const proyeccionArribaPnl = $("#proyeccionArribaPnl");
-        const proyeccionAbajoPercent = $("#proyeccionAbajoPercent");
-        const proyeccionAbajoPnl = $("#proyeccionAbajoPnl");
-    
-        // Función para calcular y mostrar la proyección en tiempo real
-        function calcularProyeccion() {
-            const direccion = direccionSelect.val();
-            const precioEntrada = parseFloat(precioEntradaInput.val());
-            const volumen = parseFloat(volumenInput.val());
-    
-            // Verificar que el precio de entrada y el volumen sean números válidos
-            if (isNaN(precioEntrada) || isNaN(volumen)) {
-                proyeccion1.text("0");
-                return;
-            }
-    
-            // Calcular la proyección de crecimiento en función de la dirección
-            const proyeccionPercent_1 = direccion === "Long" ? (precioEntrada + (precioEntrada * 0.01)) : (precioEntrada - (precioEntrada * 0.01));
-            const proyeccionPnl_1     = volumen * 0.01;
-            const proyeccionPercent_2 = direccion === "Long" ? (precioEntrada + (precioEntrada * 0.02)) : (precioEntrada - (precioEntrada * 0.02));
-            const proyeccionPnl_2     = volumen * 0.02;
-    
-            // Mostrar la proyección en el elemento HTML
-            proyeccionArribaPercent.text(proyeccionPercent_1.toFixed(4));
-            proyeccionArribaPnl.text(proyeccionPnl_1.toFixed(4));
-            proyeccionAbajoPercent.text(proyeccionPercent_2.toFixed(4));
-            proyeccionAbajoPnl.text(proyeccionPnl_2.toFixed(4));
-        }
-    
-        // Escuchar cambios en la dirección y el precio de entrada
-        direccionSelect.on("change", calcularProyeccion);
-        precioEntradaInput.on("input", calcularProyeccion);
-    
-        // Calcular la proyección al quitar el foco del campo Volumen
-        volumenInput.on("blur", calcularProyeccion);
-    
-        // Calcular la proyección inicial al cargar la página
-        calcularProyeccion();
+    ///------ GENERAR PROYECCIONES
+    // Generar proyeccion Proporcional / Strategy 1
+    $(document).on('click', '#proyeccionStrat_1', async function(e) {
+        calcularProyeccionProporcional();
     });
-    
-    
 
+    async function getProjections() {
+        try {
+            const response = await makeAjaxRequest('projections');
+            $('#orders_table').html(response.orders_table);
+        } catch (error) {
+            console.log("Error al obtener las órdenes 2:", error.statusText);
+            // Muestra un mensaje de error en un div con ID 'error_message'
+            $('#orders_table').html("Error al cargar los datos.");
+        }
+    }
+
+    // Guardar una nueva orden
+    $(document).on('click', '#guardarStrat_1', async function(e) {
+    // $("#guardar").click(async function(e) {
+        e.preventDefault();
+        const formData = {
+            moneda: $('#moneda').val(),
+            exchange: $('#exchange').val(),
+            direccion: $('#direccion').val(),
+            apalancamiento: $('#apalancamiento').val(),
+            precioEntrada: $('#precioEntrada').val(),
+            volumen: $('#volumen').val()
+        };
+    
+        try {
+            await saveOrder(formData);
+            console.log("Orden guardada");
+        } catch (error) {
+            console.log("Error al guardar la orden:", error);
+        }
+        getProjections();
+    });
 
 });

@@ -1,4 +1,24 @@
+body {
+    color: white;
+    background-image: url('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwallpaperaccess.com%2Ffull%2F395434.jpg&f=1&nofb=1&ipt=49cc32f3ef33304b376a9ff74b68abbbff07234deb824d70f5f7692db2b24af2&ipo=images');
+    background-size: cover; /* Esta propiedad ajustará la imagen para cubrir todo el fondo */
+    background-repeat: no-repeat; /* Evita que la imagen se repita */
+    background-attachment: fixed; /* Fija la imagen en su lugar mientras se desplaza la página */
+    margin: 0; /* Elimina el margen predeterminado del body */
+    padding: 0; /* Elimina el padding predeterminado del body */
+}
+
 .short {
     background-color: black;
     color: white;
-  }
+}
+
+.vertical-header-table th {
+    white-space: nowrap;
+    text-align: right;
+    vertical-align: middle;
+}
+
+.vertical-header-table td {
+    text-align: left;
+}
