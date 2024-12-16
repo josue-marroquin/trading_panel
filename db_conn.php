@@ -6,7 +6,6 @@ $db = "trading_panel";
 $conn;
 
 // Create connection
-
 try {
     $conn = mysqli_connect($servername, $username, $password, $db);    
 } catch (Exception $e) {

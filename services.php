@@ -5,17 +5,20 @@ require("db_conn.php");
 if(isset($_POST["option"])) {
     $option = $_POST["option"];
     switch ($option) {
-        case 'posiciones':
-            get_positions_from_DB();
-            break;
-        case 'ordenes':
-            get_orders_from_DB();
-            break;
         case 'insert_order':
             insert_order();
             break;
-        case 'projections':
-            projections();
+        case 'get_orders':
+            get_orders();
+            break;
+        case 'get_holdings':
+            get_holdings();
+            break;
+        case 'updated_dca':
+            calcular_nuevo_dca();
+            break;
+        case 'update_timer':
+            update_timer();
             break;
         }
     }
@@ -36,12 +39,59 @@ function get_binance_price($moneda) {
     return "No disponible"; // En caso de que no se pueda obtener el precio
 }
 
+// Calcular Nuevo DCA para ordenes preexistentes
+function calcular_nuevo_dca() { // Oct 16 2024
+    global $conn;
+    $data = $_POST["formulario"];
+    $moneda = $data["moneda"];
+    $exchange = $data["exchange"];
+    $sql = "SELECT moneda , exchange , direccion_ , X , SUM(volumen_entrada) AS suma_volumen , SUM(margen_) AS suma_margen , ROUND(SUM(volumen_entrada) / SUM(contratos_), 6) AS entrada_promedio FROM ordenes WHERE status_ = 0 AND moneda = '".$moneda."' AND exchange = '".$exchange."' GROUP BY exchange, moneda, direccion_, status_"; 
+
+    $result = $conn->query($sql);
+    $row_count = $result->num_rows;
+
+    if($row_count > 0){
+
+        while($row = $result->fetch_array()){
+            $moneda = $row['moneda'];
+            $exchange = $row['exchange'];
+            $suma_volumen = $row['suma_volumen'];
+            $entrada_promedio = $row['entrada_promedio'];
+        }
+
+    } else {
+        $suma_volumen = 0;
+        $entrada_promedio = 0;
+    }
+
+    $jsondata['suma_vol'] = $suma_volumen;
+    $jsondata['entrada_prom'] = $entrada_promedio;
+
+    echo json_encode($jsondata);
+}
+
+// Actualiza el timer en la base de datos para los tiempos de ejecucion del script de python
+function update_timer() {
+    global $conn;
+    $jsondata = array();
+    $data = $_POST["formulario"];
+    $time = $data["timerVal"];
+    $time = $time * 60;
+    $sql = "UPDATE ticker_timer SET timer_secs =". $time ." WHERE timer_ID = 1";
+    // Run update
+    $conn->query($sql);
+
+    $jsondata['updated_time'] = ($time/60) . " mins.";
+    echo json_encode($jsondata);
+}
+
 
 // Extraer ordenes Guardadas desde el tablero
 // ********  Lista de Ordenes - View  ***********************//
-function projections() {
+function get_orders() {
     // Consulta SQL
     global $conn;
+    $where = $_POST['formulario'];
     $jsondata = array();
     $table = "";
     $pnl_color = "";
@@ -50,6 +100,9 @@ function projections() {
     $total_volumen = 0;
     $total_margen = 0;
     $total_pnl = 0;
+    $exchange_total_1 = 0;
+    $exchange_total_2 = 0;
+    $exchange_total_3 = 0;
     $porcentage_del_margen = 0;
     $sql = "SELECT moneda, exchange, direccion_, X, SUM(volumen_entrada) AS suma_volumen, SUM(margen_) AS suma_margen, SUM(volumen_entrada) / SUM(contratos_) AS entrada_promedio FROM ordenes WHERE status_ = 0 GROUP BY exchange, moneda, direccion_, status_";
 
@@ -65,54 +118,82 @@ function projections() {
             $suma_volumen = $row["suma_volumen"];
             $suma_margen = $row["suma_margen"];
             $entrada_promedio = $row["entrada_promedio"];
-            $proyeccion_1 = $direccion == 'Long' ?  ($entrada_promedio + ($entrada_promedio * 0.1)) : ($entrada_promedio - ($entrada_promedio * 0.1));
-            $proyeccion_2 = $direccion == 'Long' ?  ($entrada_promedio + ($entrada_promedio * 0.2)) : ($entrada_promedio - ($entrada_promedio * 0.2));
+            $proyeccion_1 = ($suma_volumen * 10) / 100;   // Proyeccion de 50% de ganancia sobre el volumen predefinida
+            $proyeccion_2 = ($suma_volumen * (-10)) / 100;   // Proyeccion de 50% de perdida sobre el volumen predefinida
+            // $proyeccion_1 = $direccion == 'Long' ?  ($entrada_promedio + ($entrada_promedio * 0.1)) : ($entrada_promedio - ($entrada_promedio * 0.1));
+            // $proyeccion_2 = $direccion == 'Long' ?  ($entrada_promedio + ($entrada_promedio * 0.2)) : ($entrada_promedio - ($entrada_promedio * 0.2));
             $precio_actual = get_binance_price($moneda);
+            if($moneda == 'PEPE') {
+                $precio_actual = $precio_actual * 1000;
+            }
             $porcentaje_movimiento_actual = (($precio_actual / $entrada_promedio) *100) -100;
             $pnl_actual = ($suma_volumen * $porcentaje_movimiento_actual) / 100;
             $direct_color = ($direccion == 'Long' ? "style='color:#b5e7a0;'" : "style='color:#feb236;'");
             
-            // Colores de la data
+            // Coloreado de la data
             if($direccion == 'Short') {
-                $row_bg_color = "style='background-color:#feb236;'";
+                $direccion_bg_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#feb236; color: #3b3a30; font-weight: 900;'";
                 $pnl_actual = $pnl_actual * (-1);
                 $pnl_color = $pnl_actual < 0 ? "style='color:#feb236;'" : "style='color:#b5e7a0;'";
             } else if ($direccion == 'Long') {
-                $row_bg_color = "style='background-color:#82b74b;'";
+                $direccion_bg_color = "style='box-shadow: 5px -5px 12px 0px #000000 inset; background-color:#82b74b; color: #3b3a30; font-weight: 900;'";
                 $pnl_color = $pnl_actual < 0 ? "style='color:#feb236;'" : "style='color:#b5e7a0;'";
             } else {
                 $pnl_color = "style='color:blue;'"; 
             }
 
+            // A: Exchange based row color
+            // B: Suma de totales por Exchange
+            if($exchange == "BINANCE"){
+                $exchange_total_1 += $pnl_actual;
+                $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#ffcc00; color: #3b3a30; font-weight: 900;'";
+            } else if ($exchange == "BITGET") {
+                $exchange_total_2 += $pnl_actual;
+                $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#00ccff; color: #3b3a30; font-weight: 900;'";
+            } else if ($exchange == "QUANTFURY") {
+                $exchange_total_3 += $pnl_actual;
+                $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#4fa190; color: #3b3a30; font-weight: 900;'";
+            }
+
+            // Suma de totales generales
             $total_volumen += $suma_volumen;
             $total_margen += $suma_margen;
             $total_pnl += $pnl_actual;
 
             $table .= "<tr>";
-            $table .= "<td align='center' ". $row_bg_color .">".$index."</td>";
-            $table .= "<td align='center'>".$moneda."</td>";
+            $table .= "<td align='center' ". $direccion_bg_color .">".$index."</td>";
+            $table .= "<td align='center'". $exchange_color .">".$moneda."</td>";
             $table .= "<td align='center' ".$pnl_color.">".round($pnl_actual, 4)."</td>";
             $table .= "<td align='center'><strong>".round($precio_actual, 5)."<strong></td>";
-            $table .= "<td align='center'>".round($entrada_promedio, 5)."</td>";
+            $table .= "<td align='center' class='p-enrada'>".round($entrada_promedio, 5)."</td>";
             $table .= "<td align='center'>" .round($porcentaje_movimiento_actual, 3)."%</td>";
-            $table .= "<td align='center'>".$exchange."</td>";
             $table .= "<td align='center'>".$x."</td>";
-            $table .= "<td align='center'><strong>".round($suma_volumen, 4)."</strong></td>";
+            $table .= "<td align='center' class='volumen'><strong>".round($suma_volumen, 4)."</strong></td>";
             $table .= "<td align='center'>".round($suma_margen, 4)."</td>";
-            $table .= "<td align='center'>".round($proyeccion_1, 4)."</td>";
-            $table .= "<td align='center'>".round($proyeccion_2, 4)."</td>";
+            if($where != 'panel'){
+                $table .= "<td align='center' class='calc-profit'>".round($proyeccion_1, 4)."</td>";
+                $table .= "<td align='center' class='calc-loss'>".round($proyeccion_2, 4)."</td>";
+            } else {
+                $table .= "<td><button type='button' class='btn btn-sm btn-secondary close-order-btn' data-direccion='".$direccion."' data-exchange='".$exchange."' data-moneda='".$moneda."'>Close</button></td>";
+            }
             $table .= "</tr>";
-
             $index += 1;
 
         }
 
+        $btc_price = get_binance_price("BTC");
         $porcentaje_del_margen = ($total_pnl/$total_margen);
         $jsondata['orders_table'] = $table;
-        $jsondata['pnl_acumulado'] = "$" . round($total_pnl, 4);
-        $jsondata['volumen_acumulado'] = "$" . round($total_volumen, 4);
-        $jsondata['margen_acumulado'] = "$" . round($total_margen, 4);
+        $jsondata['pnl_acumulado'] = round($total_pnl, 4);
+        $jsondata['volumen_acumulado'] = round($total_volumen, 4);
+        $jsondata['margen_acumulado'] = round($total_margen, 4);
         $jsondata['perc_margen'] = round(($porcentaje_del_margen*100),2) . "%";
+        $jsondata['binance_total'] = round($exchange_total_1, 3);
+        $jsondata['bitget_total'] = round($exchange_total_2, 3);
+        $jsondata['quantfury_total'] = round($exchange_total_3, 3);
+        $jsondata['btc_price'] = round($btc_price, 3);
+        // script to run the closures
+        $jsondata['js_script'] = "<script src='js/closer.js'></script>";
 
     } else {
 
@@ -127,161 +208,91 @@ function projections() {
     echo json_encode($jsondata);
 }
 
+// Transformar a formato currency
+function transform($usd, $currency) {
+    $gtq = 7.8; // Conversion rate from USD to GTQ
+    $amountInGTQ = $usd * $gtq;
 
+    if ($currency === 'gtq') {
+        // Format and return as GTQ currency
+        return  'Q' . number_format($amountInGTQ, 5, '.', ',');
+    } elseif ($currency === 'usd') {
+        // Format and return as USD currency
+        return '$' . number_format($usd, 5, '.', ',');
+    }
+    return null; // If currency is neither 'gtq' nor 'usd'
+}
 
-
-
-// Extraer informacion de ordenes de la base de datos
-function get_orders_from_DB() {
+// ********  Lista de Holdings de Criptos  ***********************//
+function get_holdings() {
     // Consulta SQL
     global $conn;
+    $where = $_POST['formulario'];
     $jsondata = array();
     $table = "";
-    $pnl_color = "";
-    $direct_color = "";
-    $index = 1;
-    $total_volumen = 0;
-    $total_margen = 0;
-    $total_pnl = 0;
-    $porcentaje_del_margen = 0;
+    $sum_inversion = 0;
+    $sum_pnl = 0;
 
-    $sql = "SELECT id, symbol, price, origQty, type, side, origType, time FROM trading_orders ORDER BY symbol ASC";
+    $sql = "SELECT * FROM holdings";
 
-    $result = $conn->query($sql);
-    $row_count = $result->num_rows;
-
-    if ($row_count > 0) {
-        while ($row = $result->fetch_array()) {
-            $id = $row['id'];
-            $symbol = $row['symbol'];
-            $side = $row['side'] == 'SELL' ? 'SHORT' : ($row['side'] == 'BUY' ? 'LONG' : $row['side']);
-            $price = $row['price'];
-            $origQty = $row['origQty'];
-            $volumen = $price * $origQty;
-            $type = $row['type'];
-            # $side = $row['side'];
-            $time = $row['time'];
-
-            // Calcular el tiempo transcurrido desde $hora_entrada
-            $hora_actual = time(); // Tiempo actual en segundos
-            $hora_entrada_unix = strtotime($time); // Convertir la hora de entrada a tiempo Unix
-            $tiempo_transcurrido = $hora_actual - $hora_entrada_unix;
-
-            // Calcular horas y minutos transcurridos
-            $horas = floor($tiempo_transcurrido / 3600);
-            $minutos = floor(($tiempo_transcurrido % 3600) / 60);
-
-            // Procesa los datos como desees y agrega a la tabla
-            // Por ejemplo, puedes agregarlos así:
-            $table .= "<tr>";
-            $table .= "<td align='center'>".$index."</td>";
-            $table .= "<td align='center'>".$symbol."</td>";
-            $table .= "<td align='center'>".$side."</td>";
-            $table .= "<td align='center'>".$price."</td>";
-            $table .= "<td align='center'>".$volumen."</td>";
-            $table .= "<td align='center'>".$type."</td>";
-            $table .= "<td align='center'>".$origType."</td>";
-            $table .="<td>" . $horas . " horas, " . $minutos . " minutos</td>"; // Agregar el tiempo transcurrido
-            $table .= "</tr>";
-
-            $index += 1;
-        }
-
-        $jsondata['orders_table'] = $table;
-
-    } else {
-        $jsondata['orders_table'] = "Sin registros para mostrar.";
-    }
-
-    echo json_encode($jsondata);
-}
-    
-
-
-// Extraer informacion de operaciones de la base de datos
-function get_positions_from_DB() {
-
-    global $conn;
-    $table = "";
-    $pnl_color = "";
-    $direct_color = "";
-    $jsondata = array();
-    $total_volumen = 0;
-    $total_margen = 0;
-    $total_pnl = 0;
-    $porcentage_del_margen = 0;
-    // Consulta MySQL para obtener los datos
-    $sql = "SELECT symbol, position_exchange, entry_price, position_direction, leverage, mark_price, unrealized_profit, last_trade_time FROM trading_positions";
     $result = $conn->query($sql);
     $row_count = $result->num_rows;
 
     if($row_count > 0){
-        while ($row = $result->fetch_array()) {
-            $symbol = $row['symbol'];
-            $exchange = $row['position_exchange'];
-            $precio_entrada = $row['entry_price'];
-            $direccion = $row['position_direction'];
-            $volumen = $row['leverage'];
-            $precio_actual = $row['mark_price'];
-            $pnl_actual = $row['unrealized_profit'];
-            $hora_entrada = $row['last_trade_time'];
-            $direct_color = ($direccion == 'LONG' ? "style='color:green;'" : "style='color:red;'");
+        while($row = $result->fetch_array()){
+            // Valores iniciales
+            $moneda = $row['token'];
+            $amount = $row['amount'];
+            $dca = $row['dca'];
+            // Calculos
+            $inversion = floatval($amount * $dca);
+            $current_price = get_binance_price($moneda);
+            $pnl = $current_price * $amount;
+            $xs = ($pnl / $inversion);
+            // Fila de Totales
+            $sum_inversion += $inversion;
+            $sum_pnl += $pnl;
+            // Transformación de Divisas
+            $dca = transform($dca, 'usd');
+            $inversionD = transform($inversion, 'usd');
+            $inversionQ = transform($inversion, 'gtq');
+            $pnlQ = transform($current_price * $amount, 'gtq');
+            $pnlD = transform($current_price * $amount, 'usd');
+            $current_price = transform($current_price, 'usd');
 
-            // Calcular el tiempo transcurrido desde $hora_entrada
-            $hora_actual = time(); // Tiempo actual en segundos
-            $hora_entrada_unix = strtotime($hora_entrada); // Convertir la hora de entrada a tiempo Unix
-            $tiempo_transcurrido = $hora_actual - $hora_entrada_unix;
-
-            // Calcular horas y minutos transcurridos
-            $horas = floor($tiempo_transcurrido / 3600);
-            $minutos = floor(($tiempo_transcurrido % 3600) / 60);
-
-            if($direccion == 'SHORT') {
-                $pnl_color = $pnl_actual < 0 ? "style='color:red;'" : "style='color:green;'";
-            } else if ($direccion == 'LONG') {
-                $pnl_color = $pnl_actual > 0 ? "style='color:red;'" : "style='color:green;'";
-            } else {
-                $pnl_color = "style='color:blue;'"; 
-            }
-
-            $total_volumen += $volumen;
-            $total_margen += $volumen/20;
-            $total_pnl += $pnl_actual;
-
-            $table .="<tr>";
-            $table .="<td>" . $symbol . "</td>";
-            $table .="<td>" . $exchange . "</td>";
-            $table .="<td ".$direct_color.">" . $direccion . "</td>"; 
-            $table .="<td>" . $precio_entrada . "</td>";
-            $table .="<td>" . $precio_actual . "</td>";
-            $table .="<td>" . $volumen . "</td>";
-            $table .="<td ".$pnl_color.">" . $pnl_actual . "</td>";
-            $table .="<td>" . $horas . " horas, " . $minutos . " minutos</td>"; // Agregar el tiempo transcurrido
-            $table .="</tr>";
+            $table .= "<tr>";
+            $table .= "<td align='center'>".$moneda."</td>";
+            $table .= "<td align='center'>".$amount."</td>";
+            $table .= "<td align='center'>".$dca."</td>";
+            $table .= "<td align='center'>".$current_price."</td>";
+            $table .= "<td align='center'>".$inversionD."</td>";
+            $table .= "<td align='center'>".$inversionQ."</td>";
+            $table .= "<td align='center'>".$pnlD."</td>";
+            $table .= "<td align='center'>".$pnlQ."</td>";
+            $table .= "<td align='center'>".round($xs, 2)."</td>";
+            $table .= "</tr>";
         }
 
-        $porcentaje_del_margen = ($total_pnl/$total_margen);
-        $jsondata['pnl_acumulado'] = round($total_pnl, 4);
-        $jsondata['volumen_acumulado'] = round($total_volumen, 4);
-        $jsondata['margen_acumulado'] = round($total_margen, 4);
-        $jsondata['perc_margen'] = round(($porcentaje_del_margen*100),2) . "%";
-        $jsondata['posiciones_DbTable'] = $table;
+        $table .= "<tr>";
+        $table .= "<td align='center'>Totales</td>";
+        $table .= "<td align='center'>"."</td>";
+        $table .= "<td align='center'>"."</td>";
+        $table .= "<td align='center'>"."</td>";
+        $table .= "<td align='center'>".transform($sum_inversion, 'usd')."</td>";
+        $table .= "<td align='center'>".transform($sum_inversion, 'gtq')."</td>";
+        $table .= "<td align='center'>".transform($sum_pnl, 'usd')."</td>";
+        $table .= "<td align='center'>".transform($sum_pnl, 'gtq')."</td>";
+        $table .= "<td align='center'>"."</td>";
+        $table .= "</tr>";
+
+
+        $jsondata['holdings_table'] = $table;
 
     } else {
-
-        $table .= "<tr><td colspan='7'>No se encontraron resultados.</td></tr>";
-        $porcentaje_del_margen = 0;
-        $jsondata['pnl_acumulado'] = 0;
-        $jsondata['volumen_acumulado'] = 0;
-        $jsondata['margen_acumulado'] = 0;
-        $jsondata['perc_margen'] = "0%";
-        $jsondata['posiciones_DbTable'] = $table;
+        $jsondata['holdings_table'] = "Sin datos para mostrar.";
     }
 
-    // Cerrar la conexión a la base de datos
-    $conn->close();
     echo json_encode($jsondata);
-
 }
 
 
@@ -309,6 +320,7 @@ function insert_order() {
     }
 
 }
+
 
 
 ?>

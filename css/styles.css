@@ -22,3 +22,66 @@ body {
 .vertical-header-table td {
     text-align: left;
 }
+
+.binance {
+    box-shadow: 5px 5px 12px 0px #000000 inset;
+    background-color:#ffcc00;
+    color: #3b3a30;
+    font-weight: 900;
+}
+
+.bitget {
+    box-shadow: 5px 5px 12px 0px #000000 inset;
+    background-color:#00ccff;
+    color: #3b3a30;
+    font-weight: 900;
+}
+
+.quantfury {
+    box-shadow: 5px 5px 12px 0px #000000 inset;
+    background-color:#4fa190;
+    color: #3b3a30;
+    font-weight: 900;
+}
+
+/* Details Section */
+
+.header {
+    background-color: #007bff;
+    color: white;
+}
+.sub-header {
+    background-color: #7ea1db;
+    color: black;
+}
+.long {
+    background-color: #b3e6a4;
+    color: black;
+    text-align: center;
+}
+.entry-header {
+    background-color: #f0f0f0;
+    text-align: center;
+}
+.sl-projection {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+.tp-projection {
+    background-color: #d4edda;
+    color: #155724;
+}
+.table-bordered td, .table-bordered th {
+    border: 1px solid black;
+}
+.highlight-row td {
+    font-weight: bold;
+}
+.profit {
+    background-color: #d4edda;
+    color: #155724;
+}
+.loss {
+    background-color: #f8d7da;
+    color: #721c24;
+}

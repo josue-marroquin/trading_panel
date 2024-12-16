@@ -1,55 +1,71 @@
+// Rutas para generar carga dinamica y ahorro de recursos.
+const index = '/panel/index.php';
+const dashboard = '/panel/dashboard.php';
+const holdings = '/panel/dashboard_holdings.php';
+
+if (window.location.pathname === index) {
+    $(document).ready(function(){
+        getOrdersTable();
+    });
+} else if (window.location.pathname === dashboard) {
+    $(document).ready(function(){
+        getOrdersTable();
+    });
+} else if (window.location.pathname === holdings) {
+    $(document).ready(function(){
+        getHoldings();
+    });
+}
+
+
 $(document).ready(function() {
 
-    getProjections();
+    getOrdersTable();
     // Establece una actualización periódica cada minuto
     setInterval(function() {
-        getProjections();
+        getOrdersTable();
     }, 120000); // 60000 milisegundos = 1 minuto
 
 
-    // Obtener elementos del DOM y Valores - Input!!!
-    const apalancamiento = $("#apalancamiento");
-    const direccionSelect = $("#direccion");
-    const precioEntradaInput = $("#precioEntrada");
-    const stopLoss = $("#stopLoss");
-    const capital = $("#maxLoss");
-    const volumen  = $("#volumen");
-    const volumen_ = $("#volumen_");
-    const margen_ = $("#margen_");
-    const volumenInput = $("#nivel");
+    // Calcular DCA acorde a la nueva entrada - Oct 16 2024
+    async function calcularNuevoDca() {
 
-    // Campos en Tabla de Proyeccion Proporcional !!!
-    const slTable = $("#stopLossProyectado");
-    const unoAuno  = $("#unoAuno");
-    const dosAuno  = $("#dosAuno");
+        // Data para el calculo del nuevo DCA
+        let nuevoVol = parseFloat($('#volumen_').val());
+        let nuevaEntrada = parseFloat($('#precioEntrada').val());
+        let contratos = parseFloat(nuevoVol / nuevaEntrada);
 
-
-    // P R O Y E C C I O N  P R O P O R C I O N A L
-    function calcularProyeccionProporcional() {
-        console.log("Proporcional / 1:1 - 2:1");
-        const direccion = direccionSelect.val();
-        const precioEntrada = parseFloat(precioEntradaInput.val());
-        const volumen_calc = parseFloat(capital.val() * apalancamiento.val()) / (parseFloat((stopLoss.val()/100)) * apalancamiento.val());
-        const margen_calc = parseFloat(volumen_calc) / apalancamiento.val();
-        
-        if(direccion === "Long"){
-            var uno = parseFloat(precioEntrada + (precioEntrada * parseFloat((stopLoss.val()/100))));
-            var dos = parseFloat(precioEntrada + (precioEntrada * parseFloat((stopLoss.val()/100))) * 2);
-            var precioSL = (precioEntradaInput.val() - (precioEntrada * stopLoss.val() / 100));
-        } else {
-            var uno = parseFloat(precioEntrada - (precioEntrada * parseFloat((stopLoss.val()/100))));
-            var dos = parseFloat(precioEntrada - (precioEntrada * parseFloat((stopLoss.val()/100))) * 2);
-            var precioSL = (parseFloat(precioEntradaInput.val()) + parseFloat((precioEntrada * stopLoss.val()) / 100));
+        // Data para la consulta
+        let data = {
+            moneda: $('#moneda').val(),
+            exchange: $('#exchange').val()
         }
 
-        slTable.html(precioSL.toFixed(5));
-        volumen_.html(volumen_calc.toFixed(3));
-        volumen.val(volumen_calc.toFixed(3));
-        margen_.html(margen_calc.toFixed(3));
-        unoAuno.html(uno.toFixed(5));
-        dosAuno.html(dos.toFixed(5));
+        try {
+            const response = await makeAjaxRequest('updated_dca', data);
+            // Data proviniente de la DB
+            let volumenActual = parseFloat(response.suma_vol);
+            let dcaActual = parseFloat(response.entrada_prom);
+            let totalVolumen = (volumenActual + nuevoVol);
+            let contratosActuales = ((volumenActual / dcaActual));
+            let sumaContratos = contratosActuales + contratos;
+            let nuevoDCA = totalVolumen / sumaContratos;
 
+            $('#contratosActuales').text(contratosActuales.toFixed(4));
+            $('#nuevoVolumen').text("$"+totalVolumen);
+            $('#nuevoMargen').text("$"+(totalVolumen/20));
+            $('#sumaContratos').text(sumaContratos.toFixed(4));
+            $('#nuevoDCA').text(nuevoDCA.toFixed(5));
+
+        } catch (error) {
+            console.log("Error getting DCA" + error);
+        }
     }
+
+    // Generar proyeccion / Calcular Nuevo DCA
+    $(document).on('click', '#calcularNuevoDCA', async function(e) {
+        calcularNuevoDca();
+    });
 
     // Guardar Orden
     async function saveOrder(formData) {
@@ -74,16 +90,14 @@ $(document).ready(function() {
         });
     }
 
-    ///------ GENERAR PROYECCIONES
-    // Generar proyeccion Proporcional / Strategy 1
-    $(document).on('click', '#proyeccionStrat_1', async function(e) {
-        calcularProyeccionProporcional();
-    });
-
-    async function getProjections() {
+    //  Obtener informacion de las ordenes desde la BD
+    async function getOrdersTable() {
+        let d = new Date();
+        $("#updatedAt").html(d.toLocaleTimeString());
         try {
-            const response = await makeAjaxRequest('projections');
+            const response = await makeAjaxRequest('get_orders', 'panel');
             $('#orders_table').html(response.orders_table);
+            $('#hey').html(response.js_script);
         } catch (error) {
             console.log("Error al obtener las órdenes 2:", error.statusText);
             // Muestra un mensaje de error en un div con ID 'error_message'
@@ -92,8 +106,7 @@ $(document).ready(function() {
     }
 
     // Guardar una nueva orden
-    $(document).on('click', '#guardarStrat_1', async function(e) {
-    // $("#guardar").click(async function(e) {
+    $(document).on('click', '#guardarOrden', async function(e) {
         e.preventDefault();
         const formData = {
             moneda: $('#moneda').val(),
@@ -101,7 +114,7 @@ $(document).ready(function() {
             direccion: $('#direccion').val(),
             apalancamiento: $('#apalancamiento').val(),
             precioEntrada: $('#precioEntrada').val(),
-            volumen: $('#volumen').val()
+            volumen: $('#volumen_').val()
         };
     
         try {
@@ -110,7 +123,23 @@ $(document).ready(function() {
         } catch (error) {
             console.log("Error al guardar la orden:", error);
         }
-        getProjections();
+        getOrdersTable();
+    });
+
+
+    // Actualizar Timer - Python Script
+    $(document).on('click', '#timer_sync', async function(e) {
+        e.preventDefault();
+        const formData = {
+            timerVal: $('#timer_val').val()
+        };
+    
+        try {
+            const updateResponse = await makeAjaxRequest('update_timer', formData);
+            $('#ticker_time').html(updateResponse.updated_time);
+        } catch (error) {
+            console.log("Error: ", error.statusText);
+        }
     });
 
 });

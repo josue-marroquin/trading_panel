@@ -98,7 +98,7 @@
                 <a class="nav-link active" style="color:white;" aria-current="page" href="../panel">Trading Panel</a>
                 </li>
                 <li class="nav-item">
-                <a class="nav-link" style="color:white;" href="dashboard_holdings">Holdings</a>
+                <a class="nav-link" style="color:white;" href="dashboard">Dashboard</a>
                 </li>
             </ul>
             </div>
@@ -107,105 +107,27 @@
 
     <div class="container-fluid mt-4">
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-12">
                 <table class="table table-dark table-lg table-hover">
                     <thead>
                         <tr align="center">
-                            <th>PnL</th>
-                            <th>Volumen</th>
-                            <th>Margen</th>
-                            <th>% Margen</th>
+                            <th>Moneda</th>
+                            <th>Balance</th>
+                            <th>DCA</th>
+                            <th>Precio Actual</th>
+                            <th>Inversion $</th>
+                            <th>Inversion Q</th>
+                            <th>Retorno $</th>
+                            <th>Retorno Q</th>
+                            <th>X</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr align="center">
-                            <td id="pnl_total" style="font-size: 30px"></td>
-                            <td id="vol_total" style="font-size: 30px"></td>
-                            <td id="margen_total" style="font-size: 30px"></td>
-                            <td id="percMargen_total" style="font-size: 30px">
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="col-md-6">
-                <table class="table table-dark table-lg table-hover">
-                    <thead>
-                        <tr align="center">
-                            <th>Binance</th>
-                            <th>Bitget</th>
-                            <th>Quantfury</th>
-                            <th>BTC Price</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr align="center">
-                            <td id="binance" class="binance"></td>
-                            <td id="bitget" class="bitget"></td>
-                            <td id="quantfury" class="quantfury"></td>
-                            <td id="btc_price" class="btc_price"></td>
-                        </tr>
-                        <tr align="center">
-                            <td id="binance_q" class="binance"></td>
-                            <td id="bitget_q" class="bitget"></td>
-                            <td id="quantfury_q" class="quantfury"></td>
-                            <td id="btc_price_q" class="btc_price"></td>
-                        </tr>
+                    <tbody id="holdings_table">
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-
-    <div class="container-fluid mt-4">
-        <table class="table table-lg table-dark table-hover">
-            <thead>
-                <tr align="center">
-                    <th>#</th>
-                    <th>Moneda</th>
-                    <th>PnL</th>
-                    <th>P. Actual</th>
-                    <th>Entrada</th>
-                    <th>Distancia</th>
-                    <th>X</th>
-                    <th>Volumen</th>
-                    <th>Margen</th>
-                    <!--th>* Profit</th>
-                    <th>* Loss</th -->
-                    <th contenteditable="true" id="profit">0</th>
-                    <th contenteditable="true" id="loss">0</th>
-                </tr>
-            </thead>
-            <tbody id="orders_table"></tbody>
-        </table>
-    </div>
-
-</body>
-
-<script>
-    // Función para recalcular los valores en las columnas "10%" y "20%" en base al porcentaje editable
-    function recalculatePercentages() {
-        let profit_ = parseFloat($('#profit').text().replace('%', '')) / 100 || 10; // 10% por defecto
-        let loss_ = parseFloat($('#loss').text().replace('%', '')) / 100 || -10; // 20% por defecto
-
-        $('#orders_table tr').each(function() {
-            let pEntrada = parseFloat($(this).find('.volumen').text().replace(/<[^>]+>/g, '').trim()); // Limpiar el valor
-            if (!isNaN(pEntrada)) {
-                $(this).find('.calc-profit').text((pEntrada * profit_).toFixed(4)); // Calcular basado en el porcentaje del encabezado
-                $(this).find('.calc-loss').text((pEntrada * loss_).toFixed(4));
-            }
-        });
-    }
-
-    $(document).ready(function() {
-        // Recalcula porcentajes cuando se edita cualquier encabezado
-        $('#profit, #loss').on('input', function() {
-            recalculatePercentages(); // Llama a la función para recalcular las columnas
-        });
-
-        // Ejecuta la función de cálculo al cargar la página
-        recalculatePercentages();
-    });
-</script>
 
 <script src="js/actions_dashboard.js"></script>
 </html>
