@@ -12,13 +12,14 @@
     <style>
         body {
             color: white;
-            background-image: url('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwallpaperaccess.com%2Ffull%2F395434.jpg&f=1&nofb=1&ipt=49cc32f3ef33304b376a9ff74b68abbbff07234deb824d70f5f7692db2b24af2&ipo=images');
-            background-size: cover; /* Esta propiedad ajustará la imagen para cubrir todo el fondo */
-            background-repeat: no-repeat; /* Evita que la imagen se repita */
-            background-attachment: fixed; /* Fija la imagen en su lugar mientras se desplaza la página */
-            margin: 0; /* Elimina el margen predeterminado del body */
-            padding: 0; /* Elimina el padding predeterminado del body */
+            background-color: #95a2ab;
         }
+
+        table {
+            box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+            /* box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;  */
+        }
+
     </style>
 </head>
 <body>
@@ -54,23 +55,29 @@
                             <!-- Opciones de moneda -->
                             <option selected>ADA</option>
                             <option value="BTC">BTC</option>
-                            <option value="ETH">ETH</option>
-                            <option value="ROSE">ROSE</option>
-                            <option value="XRP">XRP</option>
-                            <option value="XLM">XLM</option>
                             <option value="HBAR">HBAR</option>
+                            <option value="XRP">XRP</option>
+                            <option value="ETH">ETH</option>
                             <option value="TON">TON</option>
-                            <option value="COTI">COTI</option>
                             <option value="SUI">SUI</option>
                             <option value="GALA">GALA</option>
                             <option value="SOL">SOL</option>
                             <option value="RSR">RSR</option>
                             <option value="BNB">BNB</option>
                             <option value="DOT">DOT</option>
+                            <option value="ROSE">ROSE</option>
                             <option value="TRX">TRX</option>
+                            <option value="XLM">XLM</option>
+                            <option value="COTI">COTI</option>
                             <option value="DOGE">DOGE</option>
                             <option value="PEPE">PEPE</option>
                             <option value="MKR">MKR</option>
+                            <option value="ORDER">ORDER</option>
+                            <option value="WIF">WIF</option>
+                            <option value="VELO1">VELO</option>
+                            <option value="CHILLGUY">CHILLGUY</option>
+                            <option value="WLD">WLD</option>
+                            <option value="COS">COS</option>
                         </select>
                     </div>
                 </div>
@@ -136,6 +143,11 @@
                 <div class="row">
                     <div class="form-group col-md-12">
                         <input type="button" id="details" class="form-control form-control-md btn btn-dark btn-sm" value="Detalles">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-12">
+                        <input type="button" id="close" class="form-control form-control-md btn btn-danger btn-sm" value="Cerrar Orden">
                     </div>
                 </div>
             </form>
@@ -359,6 +371,8 @@
 </div>
 
 </body>
-<div id='hey'></div>
+
 <script src="js/actions.js"></script>
+<script src='js/closer.js'></script>
+
 </html>

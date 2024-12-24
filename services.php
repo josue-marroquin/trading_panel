@@ -24,7 +24,7 @@ if(isset($_POST["option"])) {
     }
 
 
-//*** Obtener el precio actual de Binace para cada moneda Operada ****/
+//*** Obtener el precio actual de BINANCE para cada moneda Operada ****/
 function get_binance_price($moneda) {
     // Construir la URL de la API de Binance para obtener el precio de la moneda
     $apiUrl = "https://api.binance.com/api/v3/ticker/price?symbol={$moneda}USDT";
@@ -38,6 +38,27 @@ function get_binance_price($moneda) {
     }
     return "No disponible"; // En caso de que no se pueda obtener el precio
 }
+
+
+//*** Obtener el precio actual de BITGET para cada moneda Operada ****/
+function get_bitget_price($moneda) {
+    // Construir la URL de la API de Bitget para obtener el precio de la moneda
+    $apiUrl = "https://api.bitget.com/api/v2/spot/market/tickers?symbol={$moneda}USDT";
+    
+    // Realizar una solicitud GET a la API de Bitget
+    $data = file_get_contents($apiUrl);
+    
+    if ($data) {
+        $response = json_decode($data, true);
+        // Verificar si la respuesta tiene el precio
+        if (isset($response['data'][0]['lastPr'])) {
+            return $response['data'][0]['lastPr']; // Retorna el precio más reciente
+        }
+    }
+    
+    return "No disponible"; // En caso de que no se pueda obtener el precio
+}
+
 
 // Calcular Nuevo DCA para ordenes preexistentes
 function calcular_nuevo_dca() { // Oct 16 2024
@@ -97,12 +118,16 @@ function get_orders() {
     $pnl_color = "";
     $direct_color = "";
     $index = 1;
+    $precio_actual = 0;
     $total_volumen = 0;
     $total_margen = 0;
     $total_pnl = 0;
     $exchange_total_1 = 0;
     $exchange_total_2 = 0;
     $exchange_total_3 = 0;
+    $margen_binance = 0;
+    $margen_bitget = 0;
+    $margen_quantfury = 0;
     $porcentage_del_margen = 0;
     $sql = "SELECT moneda, exchange, direccion_, X, SUM(volumen_entrada) AS suma_volumen, SUM(margen_) AS suma_margen, SUM(volumen_entrada) / SUM(contratos_) AS entrada_promedio FROM ordenes WHERE status_ = 0 GROUP BY exchange, moneda, direccion_, status_";
 
@@ -120,9 +145,16 @@ function get_orders() {
             $entrada_promedio = $row["entrada_promedio"];
             $proyeccion_1 = ($suma_volumen * 10) / 100;   // Proyeccion de 50% de ganancia sobre el volumen predefinida
             $proyeccion_2 = ($suma_volumen * (-10)) / 100;   // Proyeccion de 50% de perdida sobre el volumen predefinida
-            // $proyeccion_1 = $direccion == 'Long' ?  ($entrada_promedio + ($entrada_promedio * 0.1)) : ($entrada_promedio - ($entrada_promedio * 0.1));
-            // $proyeccion_2 = $direccion == 'Long' ?  ($entrada_promedio + ($entrada_promedio * 0.2)) : ($entrada_promedio - ($entrada_promedio * 0.2));
-            $precio_actual = get_binance_price($moneda);
+
+            // Obteniendo el precio basado en el Exchange
+            if($exchange == "BINANCE"){
+                $precio_actual = get_binance_price($moneda);
+            } else if ($exchange == "BITGET") {
+                $precio_actual = get_bitget_price($moneda);
+            } else if ($exchange == "QUANTFURY") {
+                $precio_actual = get_binance_price($moneda);
+            }
+
             if($moneda == 'PEPE') {
                 $precio_actual = $precio_actual * 1000;
             }
@@ -146,12 +178,15 @@ function get_orders() {
             // B: Suma de totales por Exchange
             if($exchange == "BINANCE"){
                 $exchange_total_1 += $pnl_actual;
+                $margen_binance += $suma_margen;
                 $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#ffcc00; color: #3b3a30; font-weight: 900;'";
             } else if ($exchange == "BITGET") {
                 $exchange_total_2 += $pnl_actual;
+                $margen_bitget += $suma_margen;
                 $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#00ccff; color: #3b3a30; font-weight: 900;'";
             } else if ($exchange == "QUANTFURY") {
                 $exchange_total_3 += $pnl_actual;
+                $margen_quantfury += $suma_margen;
                 $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#4fa190; color: #3b3a30; font-weight: 900;'";
             }
 
@@ -192,8 +227,9 @@ function get_orders() {
         $jsondata['bitget_total'] = round($exchange_total_2, 3);
         $jsondata['quantfury_total'] = round($exchange_total_3, 3);
         $jsondata['btc_price'] = round($btc_price, 3);
-        // script to run the closures
-        $jsondata['js_script'] = "<script src='js/closer.js'></script>";
+        $jsondata['margen_binance'] = round($margen_binance, 3);
+        $jsondata['margen_bitget'] = round($margen_bitget, 3);
+        $jsondata['margen_quantfury'] = round($margen_quantfury, 3);
 
     } else {
 
@@ -207,6 +243,7 @@ function get_orders() {
 
     echo json_encode($jsondata);
 }
+
 
 // Transformar a formato currency
 function transform($usd, $currency) {

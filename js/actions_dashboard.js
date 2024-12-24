@@ -48,9 +48,6 @@ async function getHoldings() {
     try {
         const response = await makeAjaxRequest('get_holdings');
         $('#holdings_table').html(response.holdings_table);
-        // let adas = transform(response.ADA.token, 'gtq');
-        // let hbars = transform(response.hbar, 'gtq');
-        // let xrps =  transform(response.xrp, 'gtq');
 
     } catch (error) {
         console.log("Error al obtener los datos de Holdings:", error.statusText);
@@ -75,6 +72,11 @@ async function getDashboardOrders() {
         let bitgetQ = transform(response.bitget_total, 'gtq');
         let quantQ = transform(response.quantfury_total, 'gtq');
         let btcQ =  transform(response.btc_price, 'gtq');
+        // Margenes
+        let margen_bin = transform(response.margen_binance, 'usd');
+        let margen_bitget = transform(response.margen_bitget, 'usd');
+        let marget_quantfury = transform(response.margen_quantfury, 'usd');
+        
         $('#vol_total').text(volTot);
         $('#margen_total').text(margenTot);
         $('#pnl_total').text(pnlTot);
@@ -89,6 +91,11 @@ async function getDashboardOrders() {
         $('#bitget_q').text(bitgetQ);
         $('#quantfury_q').text(quantQ);
         $('#btc_price_q').text(btcQ);
+        // Margenes
+        $('#margen_binance').text(margen_bin);
+        $('#margen_bitget').text(margen_bitget);
+        $('#margen_quantfury').text(marget_quantfury);
+
     } catch (error) {
         console.log("Error al obtener las órdenes 2:", error.statusText);
         // Muestra un mensaje de error en un div con ID 'error_message'
