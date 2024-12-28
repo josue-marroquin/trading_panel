@@ -20,6 +20,9 @@ if(isset($_POST["option"])) {
         case 'update_timer':
             update_timer();
             break;
+        case 'update_h_values':
+            update_h_values();
+            break;
         }
     }
 
@@ -129,7 +132,7 @@ function get_orders() {
     $margen_bitget = 0;
     $margen_quantfury = 0;
     $porcentage_del_margen = 0;
-    $sql = "SELECT moneda, exchange, direccion_, X, SUM(volumen_entrada) AS suma_volumen, SUM(margen_) AS suma_margen, SUM(volumen_entrada) / SUM(contratos_) AS entrada_promedio FROM ordenes WHERE status_ = 0 GROUP BY exchange, moneda, direccion_, status_";
+    $sql = "SELECT moneda, exchange, direccion_, X, SUM(volumen_entrada) AS suma_volumen, SUM(margen_) AS suma_margen, SUM(volumen_entrada) / SUM(contratos_) AS entrada_promedio, h_stop_loss AS hsl, h_take_profit AS htp FROM ordenes WHERE status_ = 0 GROUP BY exchange, moneda, direccion_, status_";
 
     $result = $conn->query($sql);
     $row_count = $result->num_rows;
@@ -143,8 +146,10 @@ function get_orders() {
             $suma_volumen = $row["suma_volumen"];
             $suma_margen = $row["suma_margen"];
             $entrada_promedio = $row["entrada_promedio"];
-            $proyeccion_1 = ($suma_volumen * 10) / 100;   // Proyeccion de 50% de ganancia sobre el volumen predefinida
-            $proyeccion_2 = ($suma_volumen * (-10)) / 100;   // Proyeccion de 50% de perdida sobre el volumen predefinida
+            // Hipoteticos SL y TP - Formula
+            // (Suma Volumen * hsl o htp) 
+            $hsl = ($suma_volumen * $row["hsl"]);
+            $htp = ($suma_volumen * $row["htp"]);
 
             // Obteniendo el precio basado en el Exchange
             if($exchange == "BINANCE"){
@@ -155,6 +160,7 @@ function get_orders() {
                 $precio_actual = get_binance_price($moneda);
             }
 
+            // Excepcion para 1000PEPE
             if($moneda == 'PEPE') {
                 $precio_actual = $precio_actual * 1000;
             }
@@ -178,14 +184,20 @@ function get_orders() {
             // B: Suma de totales por Exchange
             if($exchange == "BINANCE"){
                 $exchange_total_1 += $pnl_actual;
+                $binance_hsl += $hsl;
+                $binance_htp += $htp;
                 $margen_binance += $suma_margen;
                 $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#ffcc00; color: #3b3a30; font-weight: 900;'";
             } else if ($exchange == "BITGET") {
                 $exchange_total_2 += $pnl_actual;
+                $bitget_hsl += $hsl;
+                $bitget_htp += $htp;
                 $margen_bitget += $suma_margen;
                 $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#00ccff; color: #3b3a30; font-weight: 900;'";
             } else if ($exchange == "QUANTFURY") {
                 $exchange_total_3 += $pnl_actual;
+                $quantfury_hsl += $hsl;
+                $quantfury_htp += $htp;
                 $margen_quantfury += $suma_margen;
                 $exchange_color = "style='box-shadow: 5px 5px 12px 0px #000000 inset; background-color:#4fa190; color: #3b3a30; font-weight: 900;'";
             }
@@ -194,6 +206,8 @@ function get_orders() {
             $total_volumen += $suma_volumen;
             $total_margen += $suma_margen;
             $total_pnl += $pnl_actual;
+            $total_hsl += $hsl;
+            $total_htp += $htp;
 
             $table .= "<tr>";
             $table .= "<td align='center' ". $direccion_bg_color .">".$index."</td>";
@@ -206,10 +220,10 @@ function get_orders() {
             $table .= "<td align='center' class='volumen'><strong>".round($suma_volumen, 4)."</strong></td>";
             $table .= "<td align='center'>".round($suma_margen, 4)."</td>";
             if($where != 'panel'){
-                $table .= "<td align='center' class='calc-profit'>".round($proyeccion_1, 4)."</td>";
-                $table .= "<td align='center' class='calc-loss'>".round($proyeccion_2, 4)."</td>";
+                $table .= "<td align='center' class='calc-profit'>".round($hsl, 4)."</td>";
+                $table .= "<td align='center' class='calc-loss'>".round($htp, 4)."</td>";
             } else {
-                $table .= "<td><button type='button' class='btn btn-sm btn-secondary close-order-btn' data-direccion='".$direccion."' data-exchange='".$exchange."' data-moneda='".$moneda."'>Close</button></td>";
+                $table .= "";
             }
             $table .= "</tr>";
             $index += 1;
@@ -230,6 +244,14 @@ function get_orders() {
         $jsondata['margen_binance'] = round($margen_binance, 3);
         $jsondata['margen_bitget'] = round($margen_bitget, 3);
         $jsondata['margen_quantfury'] = round($margen_quantfury, 3);
+        $jsondata['binance_hsl'] = round($binance_hsl, 2);
+        $jsondata['binance_htp'] = round($binance_htp, 2);
+        $jsondata['bitget_hsl'] = round($bitget_hsl, 2);
+        $jsondata['bitget_htp'] = round($bitget_htp, 2);
+        $jsondata['quantfury_hsl'] = round($quantfury_hsl, 2);
+        $jsondata['quantfury_htp'] = round($quantfury_htp, 2);
+        $jsondata['total_hsl'] = round($total_hsl, 2);
+        $jsondata['total_htp'] = round($total_htp, 2);
 
     } else {
 
@@ -344,20 +366,41 @@ function insert_order() {
     $apalancamiento = $formData['apalancamiento'];
     $precioEntrada = $formData['precioEntrada'];
     $volumen = $formData['volumen'];
+    $hsl = $formData['hsl'];
+    $htp = $formData['htp'];
     $contratos = $volumen / $precioEntrada;
     $margen = $volumen / $apalancamiento;
     
     try {
-        $sql = "INSERT INTO ordenes (moneda, exchange, direccion_, X, precio_entrada, volumen_entrada, contratos_, margen_, creada_) VALUES ('". $moneda ."','". $exchange ."','".$direccion."',". $apalancamiento .",". $precioEntrada .",". $volumen .",". $contratos .",". $margen .", NOW())";
+        $sql = "INSERT INTO ordenes (moneda, exchange, direccion_, X, precio_entrada, volumen_entrada, contratos_, margen_, h_stop_loss, h_take_profit, creada_) VALUES ('". $moneda ."','". $exchange ."','".$direccion."',". $apalancamiento .",". $precioEntrada .",". $volumen .",". $contratos .",". $margen .",". $hsl .",". $htp .", NOW())";
         $conn->query($sql);
         $conn->close();
-        // header("Location: ./index.php");
+        echo json_encode(["success" => true, "message" => "Orden guardada"]);
     } catch (Exception $e) {
-        echo "An error occurred: " . $e->getMessage();
+        echo json_encode(["success" => false, "message" => "Error: " . $e->getMessage()]);
     }
-
 }
 
 
+// *********************** UPDATE HVALUES ***********************//
+function update_h_values() {
+    // Obtiene los datos del formulario
+    global $conn;
+    $formData = $_POST["formulario"];
+    $moneda = $formData['moneda'];
+    $exchange = $formData['exchange'];
+    $direccion = $formData['direccion'];
+    $hsl = $formData['hsl'];
+    $htp = $formData['htp'];
+    
+    try {
+        $sql = "UPDATE ordenes SET h_take_profit = '". $htp ."', h_stop_loss = '". $hsl ."'  WHERE ordenes.moneda = '".$moneda."' AND ordenes.exchange = '".$exchange."' AND ordenes.direccion_ = '".$direccion."' ";
+        $conn->query($sql);
+        $conn->close();
+        echo json_encode(["success" => true, "message" => "H Values Updated!"]);
+    } catch (Exception $e) {
+        echo json_encode(["success" => false, "message" => "Error: " . $e->getMessage() . $sql]);
+    }
+}
 
 ?>

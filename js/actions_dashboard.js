@@ -24,7 +24,9 @@ if (window.location.pathname === index) {
 }
 
 
+
 // Funcion para Convertir a formato currency
+// Basicamente esta funcion agrega el formato $/GTQ.0.00
 let transform = (usd, currency) => {
     const gtq = 7.8; // Conversion rate from USD to GTQ
     const amountInGTQ = usd * gtq;
@@ -48,21 +50,26 @@ async function getHoldings() {
     try {
         const response = await makeAjaxRequest('get_holdings');
         $('#holdings_table').html(response.holdings_table);
-
     } catch (error) {
         console.log("Error al obtener los datos de Holdings:", error.statusText);
-        // Muestra un mensaje de error en un div con ID 'error_message'
         $('#holdings_table').html("Error al cargar los datos.");
     }
 }
 
-// Obtener informacion de la DB
+// Obtener y Transformar informacion de las Ordenes de futuros
 async function getDashboardOrders() {
     try {
         const response = await makeAjaxRequest('get_orders', 'dashboard'); // Get Stored Orders
+        // Variables de totales representadas en dolares
         let binanceD = transform(response.binance_total, 'usd');
+        let hsl_binanceD = transform(response.binance_hsl, 'usd');
+        let htp_binanceD = transform(response.binance_htp, 'usd');
         let bitgetD = transform(response.bitget_total, 'usd');
+        let hsl_bitgetD = transform(response.bitget_hsl, 'usd');
+        let htp_bitgetD = transform(response.bitget_htp, 'usd');
         let quantD = transform(response.quantfury_total, 'usd');
+        let hsl_quantD = transform(response.quantfury_hsl, 'usd');
+        let htp_quantD = transform(response.quantfury_htp, 'usd');
         let btcD = transform(response.btc_price, 'usd');
         let volTot = transform(response.volumen_acumulado, 'usd');
         let margenTot = transform(response.margen_acumulado, 'usd');
@@ -76,15 +83,21 @@ async function getDashboardOrders() {
         let margen_bin = transform(response.margen_binance, 'usd');
         let margen_bitget = transform(response.margen_bitget, 'usd');
         let marget_quantfury = transform(response.margen_quantfury, 'usd');
-        
+        // Volcado de datos
         $('#vol_total').text(volTot);
         $('#margen_total').text(margenTot);
         $('#pnl_total').text(pnlTot);
         $('#percMargen_total').text(response.perc_margen);
         $('#orders_table').html(response.orders_table);
         $('#binance').text(binanceD);
+        $('#hsl_binance').text(hsl_binanceD);
+        $('#htp_binance').text(htp_binanceD);
         $('#bitget').text(bitgetD);
+        $('#hsl_bitget').text(hsl_bitgetD);
+        $('#htp_bitget').text(htp_bitgetD);
         $('#quantfury').text(quantD);
+        $('#hsl_quantfury').text(hsl_quantD);
+        $('#htp_quantfury').text(htp_quantD);
         $('#btc_price').text(btcD);
         // Precios en GTQ
         $('#binance_q').text(binanceQ);
@@ -95,28 +108,8 @@ async function getDashboardOrders() {
         $('#margen_binance').text(margen_bin);
         $('#margen_bitget').text(margen_bitget);
         $('#margen_quantfury').text(marget_quantfury);
-
     } catch (error) {
-        console.log("Error al obtener las órdenes 2:", error.statusText);
-        // Muestra un mensaje de error en un div con ID 'error_message'
+        console.log("Error al obtener las órdenes 2:", error);
         $('#orders_table').html("Error al cargar los datos.");
     }
-}
-
-
-async function makeAjaxRequest(option, data = {}) {
-    return new Promise((resolve, reject) => {
-        $.ajax({
-            type: 'POST',
-            url: './services.php',
-            data: { option, formulario: data },
-            dataType: 'json',
-            success: function(response) {
-                resolve(response);
-            },
-            error: function(error) {
-                reject(error);
-            }
-        });
-    });
 }

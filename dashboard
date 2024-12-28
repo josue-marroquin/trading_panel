@@ -169,6 +169,18 @@
                             <td class="quantfury" id="margen_quantfury"></td>
                         </tr>
                         <tr align="center">
+                            <td>HSL</td>
+                            <td id="hsl_binance" class="binance"></td>
+                            <td id="hsl_bitget" class="bitget"></td>
+                            <td id="hsl_quantfury" class="quantfury"></td>
+                        </tr>
+                        <tr align="center">
+                            <td>HTP</td>
+                            <td id="htp_binance" class="binance"></td>
+                            <td id="htp_bitget" class="bitget"></td>
+                            <td id="htp_quantfury" class="quantfury"></td>
+                        </tr>
+                        <tr align="center">
                             <td>PnL $</td>
                             <td id="binance" class="binance"></td>
                             <td id="bitget" class="bitget"></td>
@@ -199,10 +211,8 @@
                     <th>X</th>
                     <th>Volumen</th>
                     <th>Margen</th>
-                    <!--th>* Profit</th>
-                    <th>* Loss</th -->
-                    <th contenteditable="true" id="profit">0</th>
-                    <th contenteditable="true" id="loss">0</th>
+                    <th>HSL</th>
+                    <th>HTP</th>
                 </tr>
             </thead>
             <tbody id="orders_table"></tbody>
@@ -210,32 +220,6 @@
     </div>
 
 </body>
-
-<script>
-    // Función para recalcular los valores en las columnas "10%" y "20%" en base al porcentaje editable
-    function recalculatePercentages() {
-        let profit_ = parseFloat($('#profit').text().replace('%', '')) / 100 || 10; // 10% por defecto
-        let loss_ = parseFloat($('#loss').text().replace('%', '')) / 100 || -10; // 20% por defecto
-
-        $('#orders_table tr').each(function() {
-            let pEntrada = parseFloat($(this).find('.volumen').text().replace(/<[^>]+>/g, '').trim()); // Limpiar el valor
-            if (!isNaN(pEntrada)) {
-                $(this).find('.calc-profit').text((pEntrada * profit_).toFixed(4)); // Calcular basado en el porcentaje del encabezado
-                $(this).find('.calc-loss').text((pEntrada * loss_).toFixed(4));
-            }
-        });
-    }
-
-    $(document).ready(function() {
-        // Recalcula porcentajes cuando se edita cualquier encabezado
-        $('#profit, #loss').on('input', function() {
-            recalculatePercentages(); // Llama a la función para recalcular las columnas
-        });
-
-        // Ejecuta la función de cálculo al cargar la página
-        recalculatePercentages();
-    });
-</script>
-
+<script src="js/assets/transactions.js"></script>
 <script src="js/actions_dashboard.js"></script>
 </html>

@@ -1,11 +1,20 @@
+html, body {
+    overflow-x: hidden;
+}
 body {
     color: white;
-    background-image: url('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwallpaperaccess.com%2Ffull%2F395434.jpg&f=1&nofb=1&ipt=49cc32f3ef33304b376a9ff74b68abbbff07234deb824d70f5f7692db2b24af2&ipo=images');
-    background-size: cover; /* Esta propiedad ajustará la imagen para cubrir todo el fondo */
-    background-repeat: no-repeat; /* Evita que la imagen se repita */
-    background-attachment: fixed; /* Fija la imagen en su lugar mientras se desplaza la página */
-    margin: 0; /* Elimina el margen predeterminado del body */
-    padding: 0; /* Elimina el padding predeterminado del body */
+    background-color: #95a2ab;
+}
+.container-fluid {
+    max-width: 100%;
+}
+table {
+    width: 100%;
+    table-layout: fixed;
+}
+table {
+    box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+    /* box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;  */
 }
 
 .short {
@@ -15,12 +24,12 @@ body {
 
 .vertical-header-table th {
     white-space: nowrap;
-    text-align: right;
+    text-align: left;
     vertical-align: middle;
 }
 
 .vertical-header-table td {
-    text-align: left;
+    text-align: right;
 }
 
 .binance {
