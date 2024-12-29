@@ -17,6 +17,25 @@ table {
     /* box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;  */
 }
 
+/* Estilos generales para el tbody */
+tbody, thead {
+    font-size: 20px;  /* Cambia el tamaño de la letra */
+    color: #ffffff;   /* Cambia el color de la letra */
+    background-color: #333333;  /* Fondo gris oscuro para el tbody */
+    /**line-height: 1.8;  /* Aumenta el espaciado entre líneas */
+    text-align: center;  /* Centra el texto */
+}
+
+/* Estilo para las filas pares */
+tbody tr:nth-child(even) {
+    background-color: #393939;  /* Fondo más claro para filas pares */
+}
+
+/* Estilo para las filas impares */
+tbody tr:nth-child(odd) {
+    background-color: #333333;  /* Fondo más oscuro para filas impares */
+}
+
 .short {
     background-color: black;
     color: white;
@@ -30,6 +49,14 @@ table {
 
 .vertical-header-table td {
     text-align: right;
+}
+
+#profit {
+    border: 2px solid #22aa32;
+}
+
+#loss {
+    border: 2px solid #aa4b22;
 }
 
 .binance {
@@ -53,8 +80,15 @@ table {
     font-weight: 900;
 }
 
-/* Details Section */
+.btc_price {
+    background-color:#181a1c;
+    color: #29caf6;
+    font-size: 30px;
+    font-weight: 900;
+}
 
+
+/****** Details Section *********/
 .header {
     background-color: #007bff;
     color: white;

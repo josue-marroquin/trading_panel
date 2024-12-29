@@ -1,11 +1,11 @@
 // Rutas para generar carga dinamica y ahorro de recursos.
 const index = '/panel/index.php';
-const dashboard = '/panel/dashboard';
-const holdings = '/panel/dashboard_holdings';
+const dashboard = '/panel/dashboard.php';
+const holdings = '/panel/dashboard_holdings.php';
 
 if (window.location.pathname === index) {
     $(document).ready(function(){
-        getDashboardOrders();
+        getOrdersTable();
     });
 } else if (window.location.pathname === dashboard) {
     $(document).ready(function(){

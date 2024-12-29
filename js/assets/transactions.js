@@ -3,7 +3,7 @@ async function makeAjaxRequest(option, data = {}) {
     return new Promise((resolve, reject) => {
         $.ajax({
             type: 'POST',
-            url: './services.php',
+            url: './php/services.php',  // Nueva ruta
             data: { option, formulario: data },
             dataType: 'json',
             success: function(response) {

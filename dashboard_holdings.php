@@ -6,8 +6,8 @@
     <title>Dashboard</title>
     <link rel="stylesheet" src="css/styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!--script src="js/jquery.js"></script-->
     <style>
         body {
             color: white;
@@ -98,7 +98,7 @@
                 <a class="nav-link active" style="color:white;" aria-current="page" href="../panel">Trading Panel</a>
                 </li>
                 <li class="nav-item">
-                <a class="nav-link" style="color:white;" href="dashboard">Dashboard</a>
+                <a class="nav-link" style="color:white;" href="dashboard.php">Dashboard</a>
                 </li>
             </ul>
             </div>

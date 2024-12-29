@@ -6,8 +6,7 @@
     <title>Trading Panel</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <!-- meta http-equiv="refresh" content="600" -->
+    <script src="js/jquery.js"></script>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg bg-dark">
@@ -19,16 +18,15 @@
     <div class="collapse navbar-collapse" id="navbarNavDropdown">
       <ul class="navbar-nav">
         <li class="nav-item">
-          <a class="nav-link active text-white" aria-current="page" href="dashboard">Dashboard</a>
+          <a class="nav-link active text-white" aria-current="page" href="dashboard.php">Dashboard</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-white" href="dashboard_holdings">Holdings</a>
+          <a class="nav-link text-white" href="dashboard_holdings.php">Holdings</a>
         </li>
       </ul>
     </div>
   </div>
 </nav>
-
 <div class="container-fluid mt-5 mb-5">
     <div class="row">
         <div class="form-group col-md-2">
